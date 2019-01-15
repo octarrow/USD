@@ -918,11 +918,12 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
-            import distutils.sysconfig
-            pyLibPath = distutils.sysconfig.get_config_var('LIBDIR')
-            pyIncPath = distutils.sysconfig.get_config_var('INCLUDEPY')
-            extraArgs.append('-DPYTHON_LIBRARY=' + pyLibPath + '/libpython2.7.dylib')
-            extraArgs.append('-DPYTHON_INCLUDE_DIR=' + pyIncPath)
+            if MacOS() and not context.buildMaya:
+                import distutils.sysconfig
+                pyLibPath = distutils.sysconfig.get_config_var('LIBDIR')
+                pyIncPath = distutils.sysconfig.get_config_var('INCLUDEPY')
+                extraArgs.append('-DPYTHON_LIBRARY=' + pyLibPath + '/libpython2.7.dylib')
+                extraArgs.append('-DPYTHON_INCLUDE_DIR=' + pyIncPath)
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
@@ -994,9 +995,17 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_BUILD_MATERIALX_PLUGIN=OFF')
 
         if context.buildMaya:
-            if context.mayaLocation:
+            if context.mayaLocation and not MacOS():
                 extraArgs.append('-DMAYA_LOCATION="{mayaLocation}"'
                                  .format(mayaLocation=context.mayaLocation))
+            if MacOS():
+                extraArgs.append('-DMAYA_LOCATION=/Applications/Autodesk/maya2017')
+                extraArgs.append('-DPYTHON_EXECUTABLE=/Applications/Autodesk/maya2017/Maya.app/Contents/Frameworks/Python.framework/Versions/2.7/bin/python2.7')
+                extraArgs.append('-DPYTHON_INCLUDE_DIR=/Applications/Autodesk/maya2017/Maya.app/Contents/Frameworks/Python.framework/Versions/2.7/include/python2.7')
+                extraArgs.append('-DPYTHON_LIBRARY=/Applications/Autodesk/maya2017/Maya.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib')
+                extraArgs.append('-DPYTHON_LIBRARIES=/Applications/Autodesk/maya2017/Maya.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib')
+                #extraArgs.append('-DPYSIDE_BIN_DIR=/Applications/Autodesk/maya2017/Maya.app/Contents/bin')
+
             extraArgs.append('-DPXR_BUILD_MAYA_PLUGIN=ON')
         else:
             extraArgs.append('-DPXR_BUILD_MAYA_PLUGIN=OFF')
@@ -1368,6 +1377,10 @@ verbosity = args.verbosity
 # they depend on. In particular, this is needed for building IlmBase/OpenEXR.
 extraPaths = []
 extraPythonPaths = []
+if MacOS() and context.buildMaya:
+    extraPythonPaths.append('/usr/local/lib/python2.7/site-packages')
+    extraPythonPaths.append('/Applications/Autodesk/maya2017/Maya.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages')
+
 if Windows():
     extraPaths.append(os.path.join(context.instDir, "lib"))
     extraPaths.append(os.path.join(context.instDir, "bin"))
